@@ -13,7 +13,7 @@ import {
   where 
 } from 'firebase/firestore';
 
-// 1. 更新後的 Firebase 配置資訊
+// 1. Firebase 配置資訊
 const firebaseConfig = {
   apiKey: "AIzaSyC2MhDQ3igesAyy_CKBpsF9RZX9AH6zTgo",
   authDomain: "easystay-cloud-test.firebaseapp.com",
@@ -28,7 +28,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// 自定義 SVG 圖示組件，確保語法正確
+// 自定義 SVG 圖示組件
 const Icon = ({ name, size = 20, className = "" }) => {
   const icons = {
     dashboard: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />,
@@ -130,7 +130,8 @@ export default function App() {
       setUserRole(savedRole);
       if (savedRole === 'admin') setActiveTab('dashboard');
     }
-    setTimeout(() => setIsLoading(false), 1200);
+    const timer = setTimeout(() => setIsLoading(false), 1200);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleAdminLogin = (e) => {
@@ -212,11 +213,11 @@ export default function App() {
           <h3 className="font-semibold mb-4 text-gray-700">最新訂房動態</h3>
           <div className="space-y-3">
             {bookings.slice(0, 3).map(b => (
-              <div key={b.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div key={b.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-gray-700">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-blue-100 rounded-full text-blue-600"><Icon name="bed" size={18}/></div>
                   <div>
-                    <p className="font-medium text-sm text-gray-800">{b.guestName}</p>
+                    <p className="font-medium text-sm">{b.guestName}</p>
                     <p className="text-xs text-gray-500">{b.date} · {b.roomType}</p>
                   </div>
                 </div>
@@ -247,12 +248,12 @@ export default function App() {
     };
 
     return (
-      <div className="space-y-6 animate-fade-in">
+      <div className="space-y-6 animate-fade-in text-gray-700">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-blue-600">
             <Icon name="calendar" size={20}/> 我要預約訂房
           </h3>
-          <form onSubmit={handleBooking} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end text-gray-700">
+          <form onSubmit={handleBooking} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div>
               <label className="block text-xs text-gray-500 mb-1">您的姓名</label>
               <input required value={formData.guestName} onChange={e=>setFormData({...formData, guestName: e.target.value})} className="w-full p-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 focus:ring-blue-400" />
@@ -274,7 +275,7 @@ export default function App() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full text-left text-gray-700">
+          <table className="w-full text-left">
             <thead className="bg-gray-50 text-gray-400 text-xs uppercase tracking-widest">
               <tr>
                 <th className="p-4 font-bold">日期</th>
@@ -321,7 +322,7 @@ export default function App() {
     };
 
     return (
-      <div className="space-y-6 animate-fade-in">
+      <div className="space-y-6 animate-fade-in text-gray-700">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-emerald-600">
             <Icon name="sprout" size={20}/> 農場工作紀錄
@@ -445,12 +446,12 @@ export default function App() {
             <p className="opacity-90 text-lg font-medium">整合民宿預約、農作紀錄與財務分析的一站式解決方案。</p>
           </div>
           <div className="w-full md:w-1/2 p-12 flex flex-col justify-center space-y-10">
-            <button onClick={handleVisitorLogin} className="p-8 bg-blue-50 hover:bg-blue-100 rounded-[2rem] flex items-center gap-6 transition-all border-2 border-blue-100 group shadow-sm active:scale-95">
+            <button onClick={handleVisitorLogin} className="p-8 bg-blue-50 hover:bg-blue-100 rounded-[2rem] flex items-center gap-6 transition-all border-2 border-blue-100 group shadow-sm active:scale-95 text-gray-800">
               <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-xl shadow-blue-200 group-hover:rotate-6 transition-transform">
                 <Icon name="user" size={28} />
               </div>
               <div className="text-left">
-                <p className="font-black text-gray-800 text-2xl tracking-tight">我是遊客</p>
+                <p className="font-black text-2xl tracking-tight">我是遊客</p>
                 <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">查詢空房與預約</p>
               </div>
             </button>
@@ -463,7 +464,7 @@ export default function App() {
                 <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300"><Icon name="lock" size={20} /></div>
                 <input 
                   type="password" 
-                  placeholder="管理員密碼" 
+                  placeholder="管理員密碼 (1234)" 
                   value={password} 
                   onChange={e=>setPassword(e.target.value)} 
                   className="w-full p-5 pl-14 bg-gray-50 border-2 border-gray-100 rounded-3xl outline-none focus:border-emerald-400 transition-all font-bold text-gray-800" 
