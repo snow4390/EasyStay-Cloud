@@ -10,25 +10,8 @@ import {
   deleteDoc, 
   doc, 
   getDocs, 
-  where,
-  setDoc
+  where 
 } from 'firebase/firestore';
-import { 
-  LayoutDashboard, 
-  BedDouble, 
-  Sprout, 
-  Wallet, 
-  LogOut, 
-  Plus, 
-  Trash2, 
-  CheckCircle2, 
-  AlertCircle,
-  Calendar,
-  ChevronRight,
-  TrendingUp,
-  TrendingDown,
-  Lock
-} from 'lucide-react';
 
 // 1. Firebase 配置資訊 (使用您提供的資訊)
 const firebaseConfig = {
@@ -45,71 +28,166 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// 自定義 SVG 圖示組件，修正 JSX 碎片語法
+const Icon = ({ name, size = 20, className = "" }) => {
+  const icons = {
+    dashboard: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />,
+    bed: <path d="M2 4v16M2 8h18M2 12h18M2 16h18M22 4v16" />,
+    sprout: <path d="M7 20h10M12 20V10M12 10a4 4 0 0 1 4-4M12 10a4 4 0 0 0-4-4" />,
+    wallet: (
+      <>
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <path d="M3 10h18" />
+      </>
+    ),
+    logout: <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />,
+    plus: (
+      <>
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </>
+    ),
+    trash: (
+      <>
+        <path d="M3 6h18" />
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      </>
+    ),
+    check: <polyline points="20 6 9 17 4 12" />,
+    alert: (
+      <>
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </>
+    ),
+    calendar: (
+      <>
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+      </>
+    ),
+    lock: (
+      <>
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </>
+    ),
+    user: (
+      <>
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+      </>
+    ),
+    trendingUp: (
+      <>
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+        <polyline points="17 6 23 6 23 12" />
+      </>
+    ),
+    trendingDown: (
+      <>
+        <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
+        <polyline points="17 18 23 18 23 12" />
+      </>
+    ),
+    chevronRight: <polyline points="9 18 15 12 9 6" />
+  };
+
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={className}
+    >
+      {icons[name] || null}
+    </svg>
+  );
+};
+
 // --- 主程式開始 ---
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState(null); 
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('booking'); 
   const [message, setMessage] = useState(null);
 
-  // 資料狀態
   const [bookings, setBookings] = useState([]);
   const [workRecords, setWorkRecords] = useState([]);
   const [transactions, setTransactions] = useState([]);
 
-  // 登入驗證邏輯
   useEffect(() => {
-    const savedAuth = localStorage.getItem('farm_auth');
-    if (savedAuth === 'true') setIsLoggedIn(true);
-    
-    // 模擬載入過程
-    setTimeout(() => setIsLoading(false), 1500);
+    const savedRole = localStorage.getItem('farm_user_role');
+    if (savedRole) {
+      setUserRole(savedRole);
+      if (savedRole === 'admin') setActiveTab('dashboard');
+    }
+    setTimeout(() => setIsLoading(false), 1200);
   }, []);
 
-  const handleLogin = (e) => {
+  const handleAdminLogin = (e) => {
     e.preventDefault();
     if (password === '1234') {
-      setIsLoggedIn(true);
-      localStorage.setItem('farm_auth', 'true');
-      setMessage({ type: 'success', text: '歡迎回來，農場主！' });
+      setUserRole('admin');
+      setActiveTab('dashboard');
+      localStorage.setItem('farm_user_role', 'admin');
+      setMessage({ type: 'success', text: '管理員歡迎回來！' });
     } else {
-      setMessage({ type: 'error', text: '密碼錯誤，請重新輸入。' });
+      setMessage({ type: 'error', text: '管理員密碼錯誤。' });
     }
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    localStorage.removeItem('farm_auth');
+  const handleVisitorLogin = () => {
+    setUserRole('visitor');
+    setActiveTab('booking');
+    localStorage.setItem('farm_user_role', 'visitor');
+    setMessage({ type: 'success', text: '歡迎光臨綠色大地農場！' });
   };
 
-  // 資料庫監聽 (即時同步)
+  const handleLogout = () => {
+    setUserRole(null);
+    localStorage.removeItem('farm_user_role');
+  };
+
   useEffect(() => {
-    if (!isLoggedIn) return;
+    if (!userRole) return;
 
     const qBookings = query(collection(db, "bookings"), orderBy("date", "desc"));
     const unsubBookings = onSnapshot(qBookings, (snapshot) => {
       setBookings(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
-    const qWork = query(collection(db, "workRecords"), orderBy("date", "desc"));
-    const unsubWork = onSnapshot(qWork, (snapshot) => {
-      setWorkRecords(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    let unsubWork = () => {};
+    let unsubFinance = () => {};
 
-    const qFinance = query(collection(db, "transactions"), orderBy("date", "desc"));
-    const unsubFinance = onSnapshot(qFinance, (snapshot) => {
-      setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    if (userRole === 'admin') {
+      const qWork = query(collection(db, "workRecords"), orderBy("date", "desc"));
+      unsubWork = onSnapshot(qWork, (snapshot) => {
+        setWorkRecords(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+
+      const qFinance = query(collection(db, "transactions"), orderBy("date", "desc"));
+      unsubFinance = onSnapshot(qFinance, (snapshot) => {
+        setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+    }
 
     return () => {
       unsubBookings();
       unsubWork();
       unsubFinance();
     };
-  }, [isLoggedIn]);
+  }, [userRole]);
 
-  // 顯示提示訊息
   useEffect(() => {
     if (message) {
       const timer = setTimeout(() => setMessage(null), 3000);
@@ -117,9 +195,8 @@ export default function App() {
     }
   }, [message]);
 
-  // --- 子組件與視圖 ---
+  // --- 視圖組件 ---
 
-  // 1. 儀表板視圖
   const DashboardView = () => {
     const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0);
     const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0);
@@ -129,9 +206,9 @@ export default function App() {
       <div className="space-y-6 animate-fade-in">
         <h2 className="text-2xl font-bold text-gray-800">營運概況</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <StatCard title="總收入" value={`$${totalIncome.toLocaleString()}`} icon={<TrendingUp className="text-emerald-500"/>} color="border-emerald-500" />
-          <StatCard title="總支出" value={`$${totalExpense.toLocaleString()}`} icon={<TrendingDown className="text-rose-500"/>} color="border-rose-500" />
-          <StatCard title="目前結餘" value={`$${balance.toLocaleString()}`} icon={<Wallet className="text-blue-500"/>} color="border-blue-500" />
+          <StatCard title="總收入" value={`$${totalIncome.toLocaleString()}`} icon={<Icon name="trendingUp" className="text-emerald-500"/>} color="border-emerald-500" />
+          <StatCard title="總支出" value={`$${totalExpense.toLocaleString()}`} icon={<Icon name="trendingDown" className="text-rose-500"/>} color="border-rose-500" />
+          <StatCard title="目前結餘" value={`$${balance.toLocaleString()}`} icon={<Icon name="wallet" className="text-blue-500"/>} color="border-blue-500" />
         </div>
         
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -140,13 +217,13 @@ export default function App() {
             {bookings.slice(0, 3).map(b => (
               <div key={b.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-full text-blue-600"><BedDouble size={18}/></div>
+                  <div className="p-2 bg-blue-100 rounded-full text-blue-600"><Icon name="bed" size={18}/></div>
                   <div>
-                    <p className="font-medium">{b.guestName}</p>
+                    <p className="font-medium text-sm">{b.guestName}</p>
                     <p className="text-xs text-gray-500">{b.date} · {b.roomType}</p>
                   </div>
                 </div>
-                <ChevronRight size={16} className="text-gray-400"/>
+                <Icon name="chevronRight" size={16} className="text-gray-400"/>
               </div>
             ))}
             {bookings.length === 0 && <p className="text-gray-400 text-center py-4">尚無訂房資訊</p>}
@@ -156,80 +233,73 @@ export default function App() {
     );
   };
 
-  // 2. 民宿訂房視圖 (含防重複邏輯)
   const BookingView = () => {
     const [formData, setFormData] = useState({ guestName: '', date: '', roomType: '雙人房' });
 
     const handleBooking = async (e) => {
       e.preventDefault();
-      // 防重複邏輯：檢查同一天、同一房型是否已被預定
-      const q = query(collection(db, "bookings"), 
-                where("date", "==", formData.date), 
-                where("roomType", "==", formData.roomType));
-      
+      const q = query(collection(db, "bookings"), where("date", "==", formData.date), where("roomType", "==", formData.roomType));
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
         setMessage({ type: 'error', text: `抱歉，${formData.date} 的 ${formData.roomType} 已被預訂。` });
         return;
       }
-
-      try {
-        await addDoc(collection(db, "bookings"), { ...formData, createdAt: new Date() });
-        setMessage({ type: 'success', text: '訂房成功！' });
-        setFormData({ guestName: '', date: '', roomType: '雙人房' });
-      } catch (err) {
-        setMessage({ type: 'error', text: '系統錯誤，請稍後再試。' });
-      }
+      await addDoc(collection(db, "bookings"), { ...formData, createdAt: new Date() });
+      setMessage({ type: 'success', text: '訂房成功！農場見。' });
+      setFormData({ guestName: '', date: '', roomType: '雙人房' });
     };
 
     return (
       <div className="space-y-6 animate-fade-in">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-            <Plus className="text-blue-500" size={20}/> 新增預約
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-blue-600">
+            <Icon name="calendar" size={20}/> 我要預約訂房
           </h3>
           <form onSubmit={handleBooking} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div>
-              <label className="block text-sm text-gray-500 mb-1">住客姓名</label>
-              <input required value={formData.guestName} onChange={e=>setFormData({...formData, guestName: e.target.value})} className="w-full p-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 focus:ring-blue-400 transition" />
+              <label className="block text-xs text-gray-500 mb-1">您的姓名</label>
+              <input required value={formData.guestName} onChange={e=>setFormData({...formData, guestName: e.target.value})} className="w-full p-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 focus:ring-blue-400" />
             </div>
             <div>
-              <label className="block text-sm text-gray-500 mb-1">入住日期</label>
-              <input required type="date" value={formData.date} onChange={e=>setFormData({...formData, date: e.target.value})} className="w-full p-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 focus:ring-blue-400 transition" />
+              <label className="block text-xs text-gray-500 mb-1">入住日期</label>
+              <input required type="date" value={formData.date} onChange={e=>setFormData({...formData, date: e.target.value})} className="w-full p-2 bg-gray-50 border rounded-lg outline-none" />
             </div>
             <div>
-              <label className="block text-sm text-gray-500 mb-1">房型選擇</label>
-              <select value={formData.roomType} onChange={e=>setFormData({...formData, roomType: e.target.value})} className="w-full p-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 focus:ring-blue-400 transition">
+              <label className="block text-xs text-gray-500 mb-1">房型</label>
+              <select value={formData.roomType} onChange={e=>setFormData({...formData, roomType: e.target.value})} className="w-full p-2 bg-gray-50 border rounded-lg outline-none">
                 <option>雙人房</option>
                 <option>四人家庭房</option>
                 <option>農場景觀房</option>
               </select>
             </div>
-            <button type="submit" className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition font-medium">確認訂房</button>
+            <button type="submit" className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition font-bold shadow-md shadow-blue-100">立即預約</button>
           </form>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <table className="w-full text-left">
-            <thead className="bg-gray-50 text-gray-500 text-sm">
+            <thead className="bg-gray-50 text-gray-400 text-xs uppercase">
               <tr>
-                <th className="p-4">入住日期</th>
-                <th className="p-4">住客</th>
+                <th className="p-4">日期</th>
+                <th className="p-4">預約客</th>
                 <th className="p-4">房型</th>
-                <th className="p-4">操作</th>
+                {userRole === 'admin' && <th className="p-4">管理</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-gray-50 text-sm">
               {bookings.map(b => (
-                <tr key={b.id} className="hover:bg-gray-50/50">
-                  <td className="p-4 font-medium">{b.date}</td>
+                <tr key={b.id}>
+                  <td className="p-4 font-semibold text-gray-600">{b.date}</td>
                   <td className="p-4">{b.guestName}</td>
-                  <td className="p-4"><span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-md text-xs">{b.roomType}</span></td>
-                  <td className="p-4">
-                    <button onClick={()=>deleteDoc(doc(db, "bookings", b.id))} className="text-rose-400 hover:text-rose-600 transition"><Trash2 size={18}/></button>
-                  </td>
+                  <td className="p-4"><span className="px-2 py-1 bg-blue-100 text-blue-600 rounded text-xs font-bold">{b.roomType}</span></td>
+                  {userRole === 'admin' && (
+                    <td className="p-4">
+                      <button onClick={()=>deleteDoc(doc(db, "bookings", b.id))} className="text-rose-400 hover:text-rose-600"><Icon name="trash" size={18}/></button>
+                    </td>
+                  )}
                 </tr>
               ))}
+              {bookings.length === 0 && <tr><td colSpan={userRole === 'admin' ? 4 : 3} className="p-10 text-center text-gray-300">目前尚無預約紀錄</td></tr>}
             </tbody>
           </table>
         </div>
@@ -237,237 +307,223 @@ export default function App() {
     );
   };
 
-  // 3. 農場工作紀錄視圖 (批次套用)
   const FarmWorkView = () => {
     const [crop, setCrop] = useState('');
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-    const activities = ['栽種', '施肥', '澆水', '除草', '噴灑驅蟲', '採收'];
+    const activities = ['栽種', '施肥', '澆水', '採收'];
 
-    const handleWorkRecord = async (activity) => {
-      if(!crop) { setMessage({type:'error', text:'請先輸入作物名稱'}); return; }
-      await addDoc(collection(db, "workRecords"), { crop, date, activity, createdAt: new Date() });
-      setMessage({ type: 'success', text: `已紀錄：${crop} ${activity}` });
+    const handleRecord = async (act) => {
+      if(!crop) return setMessage({type:'error', text:'請輸入作物名稱'});
+      await addDoc(collection(db, "workRecords"), { 
+        crop, 
+        activity: act, 
+        date: new Date().toISOString().split('T')[0],
+        createdAt: new Date() 
+      });
+      setMessage({type:'success', text:`已紀錄 ${crop} ${act}`});
+      setCrop('');
     };
 
     return (
       <div className="space-y-6 animate-fade-in">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-            <Sprout className="text-emerald-500" size={20}/> 快速工作紀錄
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-emerald-600">
+            <Icon name="sprout" size={20}/> 農場工作紀錄
           </h3>
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <input placeholder="輸入作物名稱 (如: 甜玉米)" value={crop} onChange={e=>setCrop(e.target.value)} className="flex-1 p-3 bg-gray-50 border rounded-xl outline-none focus:ring-2 focus:ring-emerald-400" />
-            <input type="date" value={date} onChange={e=>setDate(e.target.value)} className="p-3 bg-gray-50 border rounded-xl outline-none" />
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+          <input 
+            placeholder="作物名稱 (如: 玉米)..." 
+            value={crop} 
+            onChange={e=>setCrop(e.target.value)}
+            className="w-full p-3 bg-gray-50 border rounded-xl mb-4 outline-none focus:ring-2 focus:ring-emerald-400"
+          />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {activities.map(act => (
-              <button key={act} onClick={()=>handleWorkRecord(act)} className="p-3 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-600 hover:text-white transition font-medium text-sm flex items-center justify-center gap-2">
-                <CheckCircle2 size={14}/> {act}
+              <button key={act} onClick={()=>handleRecord(act)} className="p-3 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-600 hover:text-white font-bold transition">
+                {act}
               </button>
             ))}
           </div>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {workRecords.map(w => (
-            <div key={w.id} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-xs text-gray-400">{w.date}</span>
-                <button onClick={()=>deleteDoc(doc(db, "workRecords", w.id))} className="text-gray-300 hover:text-rose-500"><Trash2 size={16}/></button>
+            <div key={w.id} className="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center shadow-sm">
+              <div>
+                <p className="font-bold text-gray-800">{w.crop}</p>
+                <p className="text-xs text-gray-400 font-medium">{w.date} · {w.activity}</p>
               </div>
-              <p className="font-bold text-gray-800">{w.crop}</p>
-              <div className="mt-2 flex items-center gap-2">
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-600 rounded text-xs font-bold">{w.activity}</span>
-              </div>
+              <button onClick={()=>deleteDoc(doc(db, "workRecords", w.id))} className="text-gray-200 hover:text-rose-500 transition"><Icon name="trash" size={16}/></button>
             </div>
           ))}
+          {workRecords.length === 0 && <p className="col-span-full text-center py-10 text-gray-300">尚無工作紀錄</p>}
         </div>
       </div>
     );
   };
 
-  // 4. 財務收支視圖
   const FinanceView = () => {
     const [amount, setAmount] = useState('');
-    const [note, setNote] = useState('');
     const [type, setType] = useState('income');
-    const [category, setCategory] = useState('民宿收入');
+    const [note, setNote] = useState('');
 
-    const handleTransaction = async (e) => {
+    const handleFinance = async (e) => {
       e.preventDefault();
       await addDoc(collection(db, "transactions"), {
-        amount, note, type, category, 
-        date: new Date().toISOString().split('T')[0],
-        createdAt: new Date()
+        amount: Number(amount), type, note: note || (type === 'income' ? '一般收入' : '一般支出'),
+        date: new Date().toISOString().split('T')[0], createdAt: new Date()
       });
-      setMessage({ type: 'success', text: '收支紀錄已儲存' });
-      setAmount(''); setNote('');
+      setMessage({type:'success', text:'收支已紀錄'});
+      setAmount('');
+      setNote('');
     };
 
     return (
       <div className="space-y-6 animate-fade-in">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-            <Wallet className="text-amber-500" size={20}/> 銷貨與支出登錄
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-amber-600">
+            <Icon name="wallet" size={20}/> 財務收支登錄
           </h3>
-          <form onSubmit={handleTransaction} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+          <form onSubmit={handleFinance} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div>
-              <label className="block text-sm text-gray-500 mb-1">類型</label>
+              <label className="text-xs text-gray-400 mb-1 block">收支類型</label>
               <select value={type} onChange={e=>setType(e.target.value)} className="w-full p-2 bg-gray-50 border rounded-lg">
                 <option value="income">收入 (+)</option>
                 <option value="expense">支出 (-)</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-500 mb-1">分類</label>
-              <select value={category} onChange={e=>setCategory(e.target.value)} className="w-full p-2 bg-gray-50 border rounded-lg">
-                <option>民宿收入</option>
-                <option>農產品銷貨</option>
-                <option>體驗門票</option>
-                <option>資材購買</option>
-                <option>水電維護</option>
-              </select>
+              <label className="text-xs text-gray-400 mb-1 block">金額</label>
+              <input required type="number" value={amount} onChange={e=>setAmount(e.target.value)} className="w-full p-2 bg-gray-50 border rounded-lg" />
             </div>
             <div>
-              <label className="block text-sm text-gray-500 mb-1">金額</label>
-              <input required type="number" placeholder="金額" value={amount} onChange={e=>setAmount(e.target.value)} className="w-full p-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 focus:ring-amber-400" />
+              <label className="text-xs text-gray-400 mb-1 block">摘要/備註</label>
+              <input value={note} onChange={e=>setNote(e.target.value)} placeholder="如: 賣玉米、買飼料" className="w-full p-2 bg-gray-50 border rounded-lg" />
             </div>
-            <div className="md:col-span-1">
-              <label className="block text-sm text-gray-500 mb-1">備註</label>
-              <input placeholder="摘要" value={note} onChange={e=>setNote(e.target.value)} className="w-full p-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 focus:ring-amber-400" />
-            </div>
-            <button type="submit" className="bg-gray-800 text-white p-2 rounded-lg hover:bg-black transition font-medium">記錄</button>
+            <button type="submit" className="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold hover:bg-black transition">確認登錄</button>
           </form>
         </div>
-
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 text-gray-500 text-sm">
-              <tr>
-                <th className="p-4">日期</th>
-                <th className="p-4">分類/備註</th>
-                <th className="p-4 text-right">金額</th>
-                <th className="p-4">操作</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {transactions.map(t => (
-                <tr key={t.id} className="hover:bg-gray-50/50">
-                  <td className="p-4 text-sm text-gray-400">{t.date}</td>
-                  <td className="p-4">
-                    <p className="font-medium">{t.category}</p>
-                    <p className="text-xs text-gray-400">{t.note || '-'}</p>
-                  </td>
-                  <td className={`p-4 text-right font-bold ${t.type === 'income' ? 'text-emerald-500' : 'text-rose-500'}`}>
-                    {t.type === 'income' ? '+' : '-'}${Number(t.amount).toLocaleString()}
-                  </td>
-                  <td className="p-4 text-center">
-                    <button onClick={()=>deleteDoc(doc(db, "transactions", t.id))} className="text-gray-300 hover:text-rose-500"><Trash2 size={16}/></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="bg-white rounded-2xl border overflow-hidden shadow-sm">
+          <div className="bg-gray-50 p-3 border-b text-xs font-bold text-gray-400 uppercase">近期流水帳</div>
+          {transactions.map(t => (
+            <div key={t.id} className="p-4 border-b flex justify-between items-center last:border-0">
+              <div className="flex items-center gap-4">
+                <div className={`p-2 rounded-full ${t.type === 'income' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                  <Icon name={t.type === 'income' ? 'trendingUp' : 'trendingDown'} size={14} />
+                </div>
+                <div>
+                  <p className="font-bold text-gray-800">{t.note}</p>
+                  <p className="text-[10px] text-gray-400 font-medium">{t.date}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <p className={`font-black text-lg ${t.type === 'income' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  {t.type === 'income' ? '+' : '-'}${t.amount.toLocaleString()}
+                </p>
+                <button onClick={()=>deleteDoc(doc(db, "transactions", t.id))} className="text-gray-200 hover:text-rose-400 transition"><Icon name="trash" size={16}/></button>
+              </div>
+            </div>
+          ))}
+          {transactions.length === 0 && <p className="text-center py-10 text-gray-300">尚無財務紀錄</p>}
         </div>
       </div>
     );
   };
 
-  // --- 頁面結構渲染 ---
-
-  // 載入遮罩
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
-        <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-emerald-600 font-bold animate-pulse text-lg">系統載入中，請稍候...</p>
+        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-emerald-600 font-bold tracking-widest animate-pulse">正在開啟農場大門...</p>
       </div>
     );
   }
 
-  // 登入頁面
-  if (!isLoggedIn) {
+  if (!userRole) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
-        <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md border border-gray-100 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-2 bg-emerald-500"></div>
-          <div className="text-center mb-8">
-            <div className="inline-block p-4 bg-emerald-50 rounded-2xl text-emerald-600 mb-4">
-              <Lock size={32} />
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl flex flex-col md:flex-row overflow-hidden border-4 border-white">
+          <div className="w-full md:w-1/2 bg-emerald-600 p-12 text-white flex flex-col justify-center">
+            <div className="p-4 bg-white/20 backdrop-blur-md inline-block rounded-2xl mb-8 self-start">
+              <Icon name="sprout" size={40} />
             </div>
-            <h1 className="text-2xl font-black text-gray-800">綠色大地農場</h1>
-            <p className="text-gray-400">請輸入管理密碼以存取系統</p>
+            <h1 className="text-5xl font-black mb-6 leading-tight">綠色大地<br/>管理系統</h1>
+            <p className="opacity-80 text-lg">整合民宿預約、農作紀錄與財務分析的一站式解決方案。</p>
           </div>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input 
-              type="password" 
-              placeholder="輸入密碼 (預設: 1234)" 
-              value={password}
-              onChange={e=>setPassword(e.target.value)}
-              className="w-full p-4 bg-gray-50 border-2 border-gray-100 rounded-2xl outline-none focus:border-emerald-400 transition"
-            />
-            <button className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200">
-              登入管理系統
+          <div className="w-full md:w-1/2 p-12 flex flex-col justify-center space-y-8">
+            <button onClick={handleVisitorLogin} className="p-8 bg-blue-50 hover:bg-blue-100 rounded-3xl flex items-center gap-6 transition-all border border-blue-100 group shadow-sm">
+              <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform">
+                <Icon name="user" size={24} />
+              </div>
+              <div className="text-left">
+                <p className="font-black text-gray-800 text-xl">我是遊客</p>
+                <p className="text-sm text-gray-400 font-medium">查詢空房與預約訂房</p>
+              </div>
             </button>
-          </form>
-          {message && (
-            <div className={`mt-4 p-3 rounded-xl flex items-center gap-2 ${message.type === 'error' ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-500'}`}>
-              <AlertCircle size={18}/> {message.text}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100"></div></div>
+              <div className="relative flex justify-center text-[10px] text-gray-300 font-bold uppercase tracking-widest"><span className="bg-white px-4">或使用管理員登入</span></div>
             </div>
-          )}
+            <form onSubmit={handleAdminLogin} className="space-y-4">
+              <div className="relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"><Icon name="lock" size={18} /></div>
+                <input 
+                  type="password" 
+                  placeholder="管理員密碼" 
+                  value={password} 
+                  onChange={e=>setPassword(e.target.value)} 
+                  className="w-full p-4 pl-12 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-emerald-500 transition-all font-medium" 
+                />
+              </div>
+              <button className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-lg hover:bg-black transition-all shadow-xl shadow-gray-200">登入後台</button>
+            </form>
+          </div>
         </div>
       </div>
     );
   }
 
-  // 主介面
   return (
-    <div className="min-h-screen bg-slate-50 font-sans flex flex-col md:flex-row">
-      {/* 側邊導航 */}
-      <nav className="w-full md:w-64 bg-white border-r border-gray-100 p-6 flex flex-col shadow-sm">
-        <div className="flex items-center gap-2 mb-10 px-2">
-          <div className="p-2 bg-emerald-600 rounded-lg text-white"><Sprout size={20}/></div>
-          <h1 className="font-black text-xl text-gray-800 tracking-tight">綠色大地</h1>
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans">
+      <nav className="w-full md:w-64 bg-white border-r p-6 flex flex-col shadow-sm sticky top-0 md:h-screen">
+        <div className="flex items-center gap-3 mb-12 px-2">
+          <div className="p-2.5 bg-emerald-600 rounded-xl text-white shadow-lg shadow-emerald-100"><Icon name="sprout" size={24} /></div>
+          <div>
+            <h1 className="font-black text-xl text-gray-800 tracking-tight">綠色大地</h1>
+            <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest">{userRole==='admin'?'管理模式':'旅客模式'}</p>
+          </div>
         </div>
-        
         <div className="flex-1 space-y-2">
-          <NavBtn active={activeTab==='dashboard'} onClick={()=>setActiveTab('dashboard')} icon={<LayoutDashboard size={20}/>} label="營運總覽" />
-          <NavBtn active={activeTab==='booking'} onClick={()=>setActiveTab('booking')} icon={<BedDouble size={20}/>} label="民宿訂房" />
-          <NavBtn active={activeTab==='work'} onClick={()=>setActiveTab('work')} icon={<Sprout size={20}/>} label="工作紀錄" />
-          <NavBtn active={activeTab==='finance'} onClick={()=>setActiveTab('finance')} icon={<Wallet size={20}/>} label="財務收支" />
+          {userRole === 'admin' && (
+            <>
+              <NavBtn active={activeTab==='dashboard'} onClick={()=>setActiveTab('dashboard')} icon={<Icon name="dashboard"/>} label="營運總覽" />
+              <NavBtn active={activeTab==='work'} onClick={()=>setActiveTab('work')} icon={<Icon name="sprout"/>} label="工作紀錄" />
+              <NavBtn active={activeTab==='finance'} onClick={()=>setActiveTab('finance')} icon={<Icon name="wallet"/>} label="財務收支" />
+            </>
+          )}
+          <NavBtn active={activeTab==='booking'} onClick={()=>setActiveTab('booking')} icon={<Icon name="bed"/>} label="民宿訂房" />
         </div>
-
-        <button onClick={handleLogout} className="mt-auto flex items-center gap-3 p-3 text-gray-400 hover:text-rose-500 transition font-medium">
-          <LogOut size={20}/> 登出系統
+        <button onClick={handleLogout} className="mt-auto flex items-center gap-3 p-4 bg-gray-50 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-2xl font-black transition-all text-sm">
+          <Icon name="logout" size={18}/> 退出系統
         </button>
       </nav>
-
-      {/* 內容區塊 */}
-      <main className="flex-1 p-6 md:p-10 max-h-screen overflow-y-auto">
-        {/* 手機版頂欄 */}
-        <div className="md:hidden flex justify-between items-center mb-6">
-          <h1 className="font-bold text-gray-800">農場管理</h1>
-          <button onClick={handleLogout} className="text-gray-400"><LogOut size={20}/></button>
+      <main className="flex-1 p-6 md:p-12 max-h-screen overflow-y-auto">
+        <div className="max-w-6xl mx-auto">
+          {activeTab === 'dashboard' && <DashboardView />}
+          {activeTab === 'booking' && <BookingView />}
+          {activeTab === 'work' && <FarmWorkView />}
+          {activeTab === 'finance' && <FinanceView />}
         </div>
-
-        {/* 動態顯示視圖 */}
-        {activeTab === 'dashboard' && <DashboardView />}
-        {activeTab === 'booking' && <BookingView />}
-        {activeTab === 'work' && <FarmWorkView />}
-        {activeTab === 'finance' && <FinanceView />}
-
-        {/* 浮動訊息 */}
+        
         {message && (
-          <div className={`fixed bottom-6 right-6 p-4 rounded-2xl shadow-xl flex items-center gap-3 animate-slide-up z-50 ${message.type === 'error' ? 'bg-rose-500 text-white' : 'bg-emerald-600 text-white'}`}>
-            {message.type === 'error' ? <AlertCircle /> : <CheckCircle2 />}
-            <span className="font-medium">{message.text}</span>
+          <div className={`fixed bottom-8 right-8 p-5 rounded-2xl shadow-2xl flex items-center gap-4 animate-slide-up z-50 border-2 ${message.type==='error'?'bg-rose-500 border-rose-400':'bg-emerald-600 border-emerald-500'} text-white`}>
+            <div className="bg-white/20 p-2 rounded-lg">
+              <Icon name={message.type==='error'?'alert':'check'} size={20} /> 
+            </div>
+            <span className="font-black text-lg">{message.text}</span>
           </div>
         )}
       </main>
-
       <style>{`
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
         .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
       `}</style>
@@ -475,23 +531,22 @@ export default function App() {
   );
 }
 
-// 輔助組件
 function NavBtn({ active, onClick, icon, label }) {
   return (
-    <button onClick={onClick} className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 font-bold ${active ? 'bg-emerald-50 text-emerald-600 shadow-sm' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'}`}>
-      {icon} {label}
+    <button onClick={onClick} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all font-black text-sm ${active ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-100' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'}`}>
+      <span className={active ? 'scale-110 transition-transform' : ''}>{icon}</span> {label}
     </button>
   );
 }
 
 function StatCard({ title, value, icon, color }) {
   return (
-    <div className={`bg-white p-6 rounded-2xl shadow-sm border-l-4 ${color} flex items-center justify-between`}>
+    <div className={`bg-white p-7 rounded-3xl shadow-sm border-l-[10px] ${color} flex items-center justify-between hover:shadow-md transition-shadow`}>
       <div>
-        <p className="text-sm text-gray-400 mb-1">{title}</p>
-        <p className="text-2xl font-black text-gray-800">{value}</p>
+        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">{title}</p>
+        <p className="text-3xl font-black text-gray-800 tracking-tight">{value}</p>
       </div>
-      <div className="p-3 bg-gray-50 rounded-xl">{icon}</div>
+      <div className="p-4 bg-gray-50 rounded-2xl text-gray-600">{icon}</div>
     </div>
   );
 }
