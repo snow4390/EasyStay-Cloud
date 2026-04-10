@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
 import { 
   getFirestore, 
@@ -13,22 +13,22 @@ import {
   where 
 } from 'firebase/firestore';
 
-// 1. Firebase 配置資訊 (使用您提供的資訊)
+// 1. 更新後的 Firebase 配置資訊
 const firebaseConfig = {
-  apiKey: "AIzaSyAo5sUQkdHAaANO_KMHuJ7YPUbbRrf4B6k",
-  authDomain: "easystay-cloud-47e6d.firebaseapp.com",
-  projectId: "easystay-cloud-47e6d",
-  storageBucket: "easystay-cloud-47e6d.firebasestorage.app",
-  messagingSenderId: "658044361739",
-  appId: "1:658044361739:web:39f4e5f3fe990094e57b0e",
-  measurementId: "G-8LH29W939J"
+  apiKey: "AIzaSyC2MhDQ3igesAyy_CKBpsF9RZX9AH6zTgo",
+  authDomain: "easystay-cloud-test.firebaseapp.com",
+  projectId: "easystay-cloud-test",
+  storageBucket: "easystay-cloud-test.firebasestorage.app",
+  messagingSenderId: "570175625193",
+  appId: "1:570175625193:web:1b156a870f8b9478975d78",
+  measurementId: "G-NJ24N6VWP8"
 };
 
 // 初始化 Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// 自定義 SVG 圖示組件，修正 JSX 碎片語法
+// 自定義 SVG 圖示組件，確保語法正確
 const Icon = ({ name, size = 20, className = "" }) => {
   const icons = {
     dashboard: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />,
@@ -113,7 +113,6 @@ const Icon = ({ name, size = 20, className = "" }) => {
   );
 };
 
-// --- 主程式開始 ---
 export default function App() {
   const [userRole, setUserRole] = useState(null); 
   const [password, setPassword] = useState('');
@@ -195,8 +194,6 @@ export default function App() {
     }
   }, [message]);
 
-  // --- 視圖組件 ---
-
   const DashboardView = () => {
     const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0);
     const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0);
@@ -219,7 +216,7 @@ export default function App() {
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-blue-100 rounded-full text-blue-600"><Icon name="bed" size={18}/></div>
                   <div>
-                    <p className="font-medium text-sm">{b.guestName}</p>
+                    <p className="font-medium text-sm text-gray-800">{b.guestName}</p>
                     <p className="text-xs text-gray-500">{b.date} · {b.roomType}</p>
                   </div>
                 </div>
@@ -255,7 +252,7 @@ export default function App() {
           <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-blue-600">
             <Icon name="calendar" size={20}/> 我要預約訂房
           </h3>
-          <form onSubmit={handleBooking} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <form onSubmit={handleBooking} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end text-gray-700">
             <div>
               <label className="block text-xs text-gray-500 mb-1">您的姓名</label>
               <input required value={formData.guestName} onChange={e=>setFormData({...formData, guestName: e.target.value})} className="w-full p-2 bg-gray-50 border rounded-lg outline-none focus:ring-2 focus:ring-blue-400" />
@@ -277,24 +274,24 @@ export default function App() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <table className="w-full text-left">
-            <thead className="bg-gray-50 text-gray-400 text-xs uppercase">
+          <table className="w-full text-left text-gray-700">
+            <thead className="bg-gray-50 text-gray-400 text-xs uppercase tracking-widest">
               <tr>
-                <th className="p-4">日期</th>
-                <th className="p-4">預約客</th>
-                <th className="p-4">房型</th>
-                {userRole === 'admin' && <th className="p-4">管理</th>}
+                <th className="p-4 font-bold">日期</th>
+                <th className="p-4 font-bold">預約客</th>
+                <th className="p-4 font-bold">房型</th>
+                {userRole === 'admin' && <th className="p-4 font-bold">管理</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 text-sm">
               {bookings.map(b => (
-                <tr key={b.id}>
+                <tr key={b.id} className="hover:bg-blue-50/20 transition">
                   <td className="p-4 font-semibold text-gray-600">{b.date}</td>
                   <td className="p-4">{b.guestName}</td>
-                  <td className="p-4"><span className="px-2 py-1 bg-blue-100 text-blue-600 rounded text-xs font-bold">{b.roomType}</span></td>
+                  <td className="p-4"><span className="px-2 py-1 bg-blue-100 text-blue-600 rounded text-[10px] font-black uppercase">{b.roomType}</span></td>
                   {userRole === 'admin' && (
                     <td className="p-4">
-                      <button onClick={()=>deleteDoc(doc(db, "bookings", b.id))} className="text-rose-400 hover:text-rose-600"><Icon name="trash" size={18}/></button>
+                      <button onClick={()=>deleteDoc(doc(db, "bookings", b.id))} className="text-rose-400 hover:text-rose-600 transition"><Icon name="trash" size={18}/></button>
                     </td>
                   )}
                 </tr>
@@ -333,11 +330,11 @@ export default function App() {
             placeholder="作物名稱 (如: 玉米)..." 
             value={crop} 
             onChange={e=>setCrop(e.target.value)}
-            className="w-full p-3 bg-gray-50 border rounded-xl mb-4 outline-none focus:ring-2 focus:ring-emerald-400"
+            className="w-full p-3 bg-gray-50 border-2 border-transparent focus:border-emerald-200 rounded-xl mb-4 outline-none transition text-gray-700"
           />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {activities.map(act => (
-              <button key={act} onClick={()=>handleRecord(act)} className="p-3 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-600 hover:text-white font-bold transition">
+              <button key={act} onClick={()=>handleRecord(act)} className="p-3 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-600 hover:text-white font-black transition">
                 {act}
               </button>
             ))}
@@ -347,8 +344,8 @@ export default function App() {
           {workRecords.map(w => (
             <div key={w.id} className="bg-white p-4 rounded-xl border border-gray-100 flex justify-between items-center shadow-sm">
               <div>
-                <p className="font-bold text-gray-800">{w.crop}</p>
-                <p className="text-xs text-gray-400 font-medium">{w.date} · {w.activity}</p>
+                <p className="font-black text-gray-800">{w.crop}</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">{w.date} · {w.activity}</p>
               </div>
               <button onClick={()=>deleteDoc(doc(db, "workRecords", w.id))} className="text-gray-200 hover:text-rose-500 transition"><Icon name="trash" size={16}/></button>
             </div>
@@ -376,41 +373,41 @@ export default function App() {
     };
 
     return (
-      <div className="space-y-6 animate-fade-in">
+      <div className="space-y-6 animate-fade-in text-gray-700">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-amber-600">
             <Icon name="wallet" size={20}/> 財務收支登錄
           </h3>
           <form onSubmit={handleFinance} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div>
-              <label className="text-xs text-gray-400 mb-1 block">收支類型</label>
-              <select value={type} onChange={e=>setType(e.target.value)} className="w-full p-2 bg-gray-50 border rounded-lg">
+              <label className="text-xs text-gray-400 mb-1 block font-bold uppercase">收支類型</label>
+              <select value={type} onChange={e=>setType(e.target.value)} className="w-full p-2 bg-gray-50 border rounded-lg font-bold">
                 <option value="income">收入 (+)</option>
                 <option value="expense">支出 (-)</option>
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-400 mb-1 block">金額</label>
+              <label className="text-xs text-gray-400 mb-1 block font-bold uppercase">金額</label>
               <input required type="number" value={amount} onChange={e=>setAmount(e.target.value)} className="w-full p-2 bg-gray-50 border rounded-lg" />
             </div>
             <div>
-              <label className="text-xs text-gray-400 mb-1 block">摘要/備註</label>
+              <label className="text-xs text-gray-400 mb-1 block font-bold uppercase">摘要/備註</label>
               <input value={note} onChange={e=>setNote(e.target.value)} placeholder="如: 賣玉米、買飼料" className="w-full p-2 bg-gray-50 border rounded-lg" />
             </div>
-            <button type="submit" className="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold hover:bg-black transition">確認登錄</button>
+            <button type="submit" className="bg-gray-800 text-white px-6 py-2 rounded-lg font-black hover:bg-black transition">確認登錄</button>
           </form>
         </div>
         <div className="bg-white rounded-2xl border overflow-hidden shadow-sm">
-          <div className="bg-gray-50 p-3 border-b text-xs font-bold text-gray-400 uppercase">近期流水帳</div>
+          <div className="bg-gray-50 p-3 border-b text-[10px] font-black text-gray-400 uppercase tracking-widest">近期流水帳</div>
           {transactions.map(t => (
-            <div key={t.id} className="p-4 border-b flex justify-between items-center last:border-0">
+            <div key={t.id} className="p-4 border-b flex justify-between items-center last:border-0 hover:bg-gray-50/50 transition">
               <div className="flex items-center gap-4">
                 <div className={`p-2 rounded-full ${t.type === 'income' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
                   <Icon name={t.type === 'income' ? 'trendingUp' : 'trendingDown'} size={14} />
                 </div>
                 <div>
-                  <p className="font-bold text-gray-800">{t.note}</p>
-                  <p className="text-[10px] text-gray-400 font-medium">{t.date}</p>
+                  <p className="font-black text-gray-800">{t.note}</p>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{t.date}</p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -431,7 +428,7 @@ export default function App() {
     return (
       <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
         <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-emerald-600 font-bold tracking-widest animate-pulse">正在開啟農場大門...</p>
+        <p className="text-emerald-600 font-black tracking-[0.2em] uppercase animate-pulse">正在開啟農場大門...</p>
       </div>
     );
   }
@@ -439,40 +436,40 @@ export default function App() {
   if (!userRole) {
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-4xl flex flex-col md:flex-row overflow-hidden border-4 border-white">
+        <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-4xl flex flex-col md:flex-row overflow-hidden border-8 border-white">
           <div className="w-full md:w-1/2 bg-emerald-600 p-12 text-white flex flex-col justify-center">
-            <div className="p-4 bg-white/20 backdrop-blur-md inline-block rounded-2xl mb-8 self-start">
+            <div className="p-5 bg-white/20 backdrop-blur-md inline-block rounded-2xl mb-8 self-start">
               <Icon name="sprout" size={40} />
             </div>
-            <h1 className="text-5xl font-black mb-6 leading-tight">綠色大地<br/>管理系統</h1>
-            <p className="opacity-80 text-lg">整合民宿預約、農作紀錄與財務分析的一站式解決方案。</p>
+            <h1 className="text-5xl font-black mb-6 leading-tight tracking-tight">綠色大地<br/>管理系統</h1>
+            <p className="opacity-90 text-lg font-medium">整合民宿預約、農作紀錄與財務分析的一站式解決方案。</p>
           </div>
-          <div className="w-full md:w-1/2 p-12 flex flex-col justify-center space-y-8">
-            <button onClick={handleVisitorLogin} className="p-8 bg-blue-50 hover:bg-blue-100 rounded-3xl flex items-center gap-6 transition-all border border-blue-100 group shadow-sm">
-              <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform">
-                <Icon name="user" size={24} />
+          <div className="w-full md:w-1/2 p-12 flex flex-col justify-center space-y-10">
+            <button onClick={handleVisitorLogin} className="p-8 bg-blue-50 hover:bg-blue-100 rounded-[2rem] flex items-center gap-6 transition-all border-2 border-blue-100 group shadow-sm active:scale-95">
+              <div className="p-4 bg-blue-600 text-white rounded-2xl shadow-xl shadow-blue-200 group-hover:rotate-6 transition-transform">
+                <Icon name="user" size={28} />
               </div>
               <div className="text-left">
-                <p className="font-black text-gray-800 text-xl">我是遊客</p>
-                <p className="text-sm text-gray-400 font-medium">查詢空房與預約訂房</p>
+                <p className="font-black text-gray-800 text-2xl tracking-tight">我是遊客</p>
+                <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">查詢空房與預約</p>
               </div>
             </button>
             <div className="relative">
-              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100"></div></div>
-              <div className="relative flex justify-center text-[10px] text-gray-300 font-bold uppercase tracking-widest"><span className="bg-white px-4">或使用管理員登入</span></div>
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t-2 border-gray-50"></div></div>
+              <div className="relative flex justify-center text-[10px] text-gray-300 font-black uppercase tracking-[0.3em]"><span className="bg-white px-6">管理員驗證</span></div>
             </div>
             <form onSubmit={handleAdminLogin} className="space-y-4">
               <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"><Icon name="lock" size={18} /></div>
+                <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300"><Icon name="lock" size={20} /></div>
                 <input 
                   type="password" 
                   placeholder="管理員密碼" 
                   value={password} 
                   onChange={e=>setPassword(e.target.value)} 
-                  className="w-full p-4 pl-12 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-emerald-500 transition-all font-medium" 
+                  className="w-full p-5 pl-14 bg-gray-50 border-2 border-gray-100 rounded-3xl outline-none focus:border-emerald-400 transition-all font-bold text-gray-800" 
                 />
               </div>
-              <button className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-lg hover:bg-black transition-all shadow-xl shadow-gray-200">登入後台</button>
+              <button className="w-full py-5 bg-gray-900 text-white rounded-3xl font-black text-xl hover:bg-black transition-all shadow-2xl shadow-gray-300 active:scale-95">進入後台系統</button>
             </form>
           </div>
         </div>
@@ -482,15 +479,15 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans">
-      <nav className="w-full md:w-64 bg-white border-r p-6 flex flex-col shadow-sm sticky top-0 md:h-screen">
-        <div className="flex items-center gap-3 mb-12 px-2">
-          <div className="p-2.5 bg-emerald-600 rounded-xl text-white shadow-lg shadow-emerald-100"><Icon name="sprout" size={24} /></div>
+      <nav className="w-full md:w-64 bg-white border-r-2 border-gray-50 p-6 flex flex-col shadow-sm sticky top-0 md:h-screen">
+        <div className="flex items-center gap-4 mb-14 px-2">
+          <div className="p-2.5 bg-emerald-600 rounded-xl text-white shadow-xl shadow-emerald-100"><Icon name="sprout" size={24} /></div>
           <div>
             <h1 className="font-black text-xl text-gray-800 tracking-tight">綠色大地</h1>
-            <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest">{userRole==='admin'?'管理模式':'旅客模式'}</p>
+            <p className="text-[10px] text-emerald-600 font-black uppercase tracking-[0.2em]">{userRole==='admin'?'管理模式':'遊客模式'}</p>
           </div>
         </div>
-        <div className="flex-1 space-y-2">
+        <div className="flex-1 space-y-3">
           {userRole === 'admin' && (
             <>
               <NavBtn active={activeTab==='dashboard'} onClick={()=>setActiveTab('dashboard')} icon={<Icon name="dashboard"/>} label="營運總覽" />
@@ -500,11 +497,11 @@ export default function App() {
           )}
           <NavBtn active={activeTab==='booking'} onClick={()=>setActiveTab('booking')} icon={<Icon name="bed"/>} label="民宿訂房" />
         </div>
-        <button onClick={handleLogout} className="mt-auto flex items-center gap-3 p-4 bg-gray-50 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-2xl font-black transition-all text-sm">
-          <Icon name="logout" size={18}/> 退出系統
+        <button onClick={handleLogout} className="mt-auto flex items-center gap-3 p-5 bg-gray-50 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-3xl font-black transition-all text-xs uppercase tracking-widest">
+          <Icon name="logout" size={20}/> 退出系統
         </button>
       </nav>
-      <main className="flex-1 p-6 md:p-12 max-h-screen overflow-y-auto">
+      <main className="flex-1 p-6 md:p-14 max-h-screen overflow-y-auto">
         <div className="max-w-6xl mx-auto">
           {activeTab === 'dashboard' && <DashboardView />}
           {activeTab === 'booking' && <BookingView />}
@@ -513,19 +510,19 @@ export default function App() {
         </div>
         
         {message && (
-          <div className={`fixed bottom-8 right-8 p-5 rounded-2xl shadow-2xl flex items-center gap-4 animate-slide-up z-50 border-2 ${message.type==='error'?'bg-rose-500 border-rose-400':'bg-emerald-600 border-emerald-500'} text-white`}>
-            <div className="bg-white/20 p-2 rounded-lg">
-              <Icon name={message.type==='error'?'alert':'check'} size={20} /> 
+          <div className={`fixed bottom-10 right-10 p-6 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] flex items-center gap-5 animate-slide-up z-50 border-4 ${message.type==='error'?'bg-rose-500 border-rose-400':'bg-emerald-600 border-emerald-500'} text-white`}>
+            <div className="bg-white/20 p-3 rounded-2xl">
+              <Icon name={message.type==='error'?'alert':'check'} size={24} /> 
             </div>
-            <span className="font-black text-lg">{message.text}</span>
+            <span className="font-black text-xl tracking-tight">{message.text}</span>
           </div>
         )}
       </main>
       <style>{`
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
-        .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
       `}</style>
     </div>
   );
@@ -533,20 +530,20 @@ export default function App() {
 
 function NavBtn({ active, onClick, icon, label }) {
   return (
-    <button onClick={onClick} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all font-black text-sm ${active ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-100' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'}`}>
-      <span className={active ? 'scale-110 transition-transform' : ''}>{icon}</span> {label}
+    <button onClick={onClick} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all font-black text-sm tracking-tight ${active ? 'bg-emerald-600 text-white shadow-[0_10px_25px_-5px_rgba(16,185,129,0.4)]' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}>
+      <span className={active ? 'scale-110' : ''}>{icon}</span> {label}
     </button>
   );
 }
 
 function StatCard({ title, value, icon, color }) {
   return (
-    <div className={`bg-white p-7 rounded-3xl shadow-sm border-l-[10px] ${color} flex items-center justify-between hover:shadow-md transition-shadow`}>
+    <div className={`bg-white p-8 rounded-[2.5rem] shadow-sm border-l-[12px] ${color} flex items-center justify-between hover:shadow-xl transition-all duration-300 group`}>
       <div>
-        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">{title}</p>
-        <p className="text-3xl font-black text-gray-800 tracking-tight">{value}</p>
+        <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mb-2">{title}</p>
+        <p className="text-4xl font-black text-gray-800 tracking-tighter group-hover:scale-105 transition-transform origin-left">{value}</p>
       </div>
-      <div className="p-4 bg-gray-50 rounded-2xl text-gray-600">{icon}</div>
+      <div className="p-5 bg-gray-50 rounded-3xl text-gray-600 group-hover:bg-gray-100 transition-colors">{icon}</div>
     </div>
   );
 }
