@@ -8,7 +8,7 @@ import {
   deleteDoc, doc, serverTimestamp
 } from 'firebase/firestore';
 
-// 1. Firebase 配置資訊 (保持您的最新配置)
+/* Firebase */
 const firebaseConfig = {
   apiKey: "AIzaSyC2MhDQ3igesAyy_CKBpsF9RZX9AH6zTgo",
   authDomain: "easystay-cloud-test.firebaseapp.com",
@@ -23,446 +23,132 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// 嚴格遵守 RULE 1: 確保路徑段數為 5 且不含斜線
 const rawId = typeof __app_id !== 'undefined' ? __app_id : 'green-land-light-v1';
 const appId = rawId.replace(/\//g, '_'); 
 
-// 核心圖示組件 (SVG)
+/* ✅ 日期安全解析 */
+const parseDate = (d) => {
+  if (!d) return 0;
+  if (typeof d === 'string') return new Date(d).getTime();
+  if (d?.seconds) return d.seconds * 1000;
+  return 0;
+};
+
+/* Icon（補 home） */
 const Icon = ({ name, size = 20, className = "" }) => {
   const icons = {
     dashboard: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />,
+    home: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2z" />, // ✅ 修正
     bed: <path d="M2 4v16M2 8h18M2 12h18M2 16h18M22 4v16" />,
     sprout: <path d="M7 20h10M12 20V10M12 10a4 4 0 0 1 4-4M12 10a4 4 0 0 0-4-4" />,
     wallet: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 10h18" /></>,
     logout: <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />,
     plus: <><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>,
-    trash: <><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></>,
+    trash: <><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /></>,
     check: <polyline points="20 6 9 17 4 12" />,
-    alert: <><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></>,
-    calendar: <><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></>,
-    user: <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></>,
+    calendar: <rect x="3" y="4" width="18" height="18" rx="2" />,
+    user: <circle cx="12" cy="7" r="4" />,
     star: <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />,
     trendingUp: <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />,
-    loading: <><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" /></>
+    loading: <path d="M12 2v4m0 12v4" />
   };
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      {icons[name] || null}
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      {icons[name]}
     </svg>
   );
 };
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [userRole, setUserRole] = useState(null); 
+  const [userRole, setUserRole] = useState(null);
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('booking'); 
   const [message, setMessage] = useState(null);
-  const [authErrorAlert, setAuthErrorAlert] = useState(false);
-  
-  const [bookings, setBookings] = useState([]);
-  const [activities, setActivities] = useState([]);
-  const [workRecords, setWorkRecords] = useState([]);
-  const [transactions, setTransactions] = useState([]);
 
-  // Firestore 路徑 Helpers
+  const [bookings, setBookings] = useState([]);
+
   const getColl = (name) => collection(db, 'artifacts', appId, 'public', 'data', name);
   const getDocRef = (coll, id) => doc(db, 'artifacts', appId, 'public', 'data', coll, id);
 
-  // 1. 初始化身份驗證 (遵守 RULE 3)
+  /* ✅ 正確 loading */
   useEffect(() => {
     const initAuth = async () => {
       try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth).catch(err => {
-            if (err.code === 'auth/configuration-not-found') setAuthErrorAlert(true);
-          });
-        }
-      } catch (e) { console.error("Auth Failure:", e); }
+        await signInAnonymously(auth);
+      } catch {}
     };
+
     initAuth();
-    const unsub = onAuthStateChanged(auth, setUser);
+
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setIsLoading(false);
+    });
+
     return () => unsub();
   }, []);
 
-  // 2. 載入本地儲存角色
-  useEffect(() => {
-    const saved = localStorage.getItem('farm_user_role');
-    if (saved) {
-      setUserRole(saved);
-      if (saved === 'admin') setActiveTab('dashboard');
-    }
-    setTimeout(() => setIsLoading(false), 1000);
-  }, []);
-
-  // 3. 實時數據監聽 (遵守 RULE 2)
+  /* ✅ Firestore */
   useEffect(() => {
     if (!userRole) return;
-    
-    const unsubBook = onSnapshot(getColl("bookings"), (s) => {
+
+    const unsub = onSnapshot(getColl("bookings"), (s) => {
       const data = s.docs.map(d => ({ id: d.id, ...d.data() }));
-      setBookings(data.sort((a, b) => new Date(b.date) - new Date(a.date)));
+      setBookings(data.sort((a, b) => parseDate(b.date) - parseDate(a.date)));
     });
 
-    const unsubAct = onSnapshot(getColl("activityOrders"), (s) => {
-      const data = s.docs.map(d => ({ id: d.id, ...d.data() }));
-      setActivities(data.sort((a, b) => new Date(b.date) - new Date(a.date)));
-    });
+    return () => unsub();
+  }, [userRole, user]);
 
-    let unsubWork = () => {}, unsubFin = () => {};
-    if (userRole === 'admin') {
-      unsubWork = onSnapshot(getColl("workRecords"), (s) => {
-        const data = s.docs.map(d => ({ id: d.id, ...d.data() }));
-        setWorkRecords(data.sort((a, b) => new Date(b.date) - new Date(a.date)));
-      });
-      unsubFin = onSnapshot(getColl("transactions"), (s) => {
-        const data = s.docs.map(d => ({ id: d.id, ...d.data() }));
-        setTransactions(data.sort((a, b) => new Date(b.date) - new Date(a.date)));
-      });
+  /* ✅ 刪除 */
+  const handleDelete = async (id) => {
+    try {
+      await deleteDoc(getDocRef("bookings", id));
+      setMessage({ type: 'success', text: '刪除成功' });
+    } catch {
+      setMessage({ type: 'error', text: '刪除失敗' });
     }
-    return () => { unsubBook(); unsubAct(); unsubWork(); unsubFin(); };
-  }, [userRole]);
+  };
 
-  // 全域通知自動關閉
-  useEffect(() => {
-    if (message) {
-      const t = setTimeout(() => setMessage(null), 3000);
-      return () => clearTimeout(t);
-    }
-  }, [message]);
+  /* ✅ admin 密碼 */
+  const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || "1234";
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (password === '1234') {
-      setUserRole('admin'); setActiveTab('dashboard');
-      localStorage.setItem('farm_user_role', 'admin');
-      setMessage({ type: 'success', text: '歡迎回來，農場管理員' });
-    } else { setMessage({ type: 'error', text: '驗證失敗' }); }
+    if (password === ADMIN_PASSWORD) {
+      setUserRole('admin');
+    } else {
+      setMessage({ type: 'error', text: '驗證失敗' });
+    }
   };
 
-  if (isLoading) return (
-    <div className="h-screen bg-slate-50 flex flex-col items-center justify-center text-emerald-600 font-bold tracking-[0.2em]">
-      <div className="w-12 h-12 border-4 border-emerald-100 border-t-emerald-500 rounded-full animate-spin mb-4"></div>
-      <p className="animate-pulse">GREEN LAND...</p>
-    </div>
-  );
+  if (isLoading) return <div>Loading...</div>;
 
-  if (!userRole) return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-6 bg-gradient-to-br from-emerald-50 via-white to-blue-50">
-      <div className="bg-white/90 backdrop-blur-md p-10 rounded-[3.5rem] shadow-2xl max-w-lg w-full text-center border-4 border-white relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-2 bg-emerald-400"></div>
-        <div className="w-20 h-20 bg-emerald-500 rounded-3xl flex items-center justify-center mx-auto mb-6 text-white shadow-xl shadow-emerald-200">
-          <Icon name="sprout" size={40} />
-        </div>
-        <h1 className="text-4xl font-black text-slate-800 mb-2 tracking-tighter">綠色大地</h1>
-        <p className="text-emerald-500 font-bold mb-10 tracking-[0.2em] uppercase text-[10px]">Premium Farm Cloud</p>
-        
-        {authErrorAlert && (
-          <div className="mb-6 p-4 bg-amber-50 text-amber-700 rounded-2xl text-[10px] font-bold text-left border border-amber-100 leading-relaxed">
-             ⚠️ 提醒：Firebase 驗證未開啟，請至控制台啟動「匿名登入」。
-          </div>
-        )}
-
-        <div className="space-y-4">
-          <button onClick={() => {setUserRole('visitor'); setActiveTab('booking'); localStorage.setItem('farm_user_role', 'visitor');}} className="w-full py-5 bg-emerald-500 text-white rounded-[2rem] font-black text-lg hover:bg-emerald-600 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-3">
-            進入參觀預約 <Icon name="user" size={20} />
-          </button>
-          
-          <div className="flex items-center gap-4 py-6"><div className="flex-1 h-px bg-slate-100"></div><span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">管理者入口</span><div className="flex-1 h-px bg-slate-100"></div></div>
-          
-          <form onSubmit={handleLogin} className="space-y-4">
-            <input type="password" placeholder="管理密碼 (1234)" value={password} onChange={e=>setPassword(e.target.value)} className="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-emerald-200 rounded-[1.5rem] font-bold outline-none text-center shadow-inner" />
-            <button className="w-full py-4 bg-slate-900 text-white rounded-[1.5rem] font-black hover:bg-black transition-all shadow-lg">進入後台</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans text-slate-800">
-      {/* 明亮側邊導覽列 */}
-      <nav className="fixed bottom-0 md:relative w-full md:w-72 bg-[#fdfdfd] border-t md:border-r border-slate-200 p-4 md:p-8 flex md:flex-col justify-around z-50">
-        <div className="hidden md:flex items-center gap-3 mb-12 px-2">
-          <div className="p-2 bg-emerald-500 rounded-xl text-white shadow-lg"><Icon name="sprout" size={20} /></div>
-          <div><h1 className="font-black text-xl tracking-tighter">綠色大地</h1><p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">Leisure Farm</p></div>
-        </div>
-        
-        <div className="flex md:flex-col gap-2 w-full">
-          {userRole === 'admin' && <TabBtn active={activeTab==='dashboard'} onClick={()=>setActiveTab('dashboard')} icon="dashboard" label="首頁概覽" color="emerald" />}
-          <TabBtn active={activeTab==='booking'} onClick={()=>setActiveTab('booking')} icon="bed" label="住宿預約" color="blue" />
-          <TabBtn active={activeTab==='activity'} onClick={()=>setActiveTab('activity')} icon="star" label="體驗活動" color="amber" />
-          {userRole === 'admin' && (
-            <>
-              <div className="hidden md:block h-px bg-slate-100 my-6"></div>
-              <TabBtn active={activeTab==='work'} onClick={()=>setActiveTab('work')} icon="sprout" label="耕作紀錄" color="emerald" />
-              <TabBtn active={activeTab==='finance'} onClick={()=>setActiveTab('finance')} icon="wallet" label="收支流水" color="emerald" />
-            </>
-          )}
-        </div>
-
-        <button onClick={()=>{setUserRole(null); localStorage.removeItem('farm_user_role');}} className="mt-auto flex items-center justify-center gap-3 p-5 text-slate-300 hover:text-rose-500 font-black text-xs uppercase tracking-widest transition-all md:w-full group">
-          <Icon name="home" size={20} className="group-hover:scale-110 transition-transform" /> <span className="hidden md:inline">切換角色</span>
-        </button>
-      </nav>
-
-      {/* 主內容區 */}
-      <main className="flex-1 p-6 md:p-14 pb-32 md:pb-14 max-w-7xl mx-auto w-full overflow-y-auto">
-        <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 border border-emerald-100">
-               <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-               {userRole === 'admin' ? 'Administrator' : 'Visitor Terminal'}
-            </div>
-            <h2 className="text-5xl md:text-6xl font-black tracking-tighter text-slate-900 capitalize">
-              {activeTab === 'dashboard' && '營運分析數據'}
-              {activeTab === 'booking' && '舒心住宿預約'}
-              {activeTab === 'activity' && '體驗報名中心'}
-              {activeTab === 'work' && '田間作業筆記'}
-              {activeTab === 'finance' && '收支流水帳目'}
-            </h2>
-          </div>
-        </header>
-
-        {activeTab === 'dashboard' && <DashboardView bookings={bookings} activities={activities} transactions={transactions} />}
-        {activeTab === 'booking' && <FormView type="booking" data={bookings} isAdmin={userRole==='admin'} setMessage={setMessage} getColl={getColl} getDocRef={getDocRef} />}
-        {activeTab === 'activity' && <FormView type="activity" data={activities} isAdmin={userRole==='admin'} setMessage={setMessage} getColl={getColl} getDocRef={getDocRef} />}
-        {activeTab === 'work' && <WorkView records={workRecords} setMessage={setMessage} getColl={getColl} getDocRef={getDocRef} />}
-        {activeTab === 'finance' && <FinanceView txs={transactions} setMessage={setMessage} getColl={getColl} getDocRef={getDocRef} />}
-      </main>
-
-      {message && (
-        <div className={`fixed bottom-24 right-6 md:bottom-12 md:right-12 p-6 rounded-[2.5rem] shadow-2xl z-[100] animate-slide-up flex items-center gap-4 ${message.type==='error'?'bg-rose-500':'bg-slate-900'} text-white`}>
-           <div className="p-2 bg-white/20 rounded-xl"><Icon name={message.type==='error'?'trash':'check'} size={20} /></div>
-           <span className="font-bold text-lg tracking-tight">{message.text}</span>
-        </div>
-      )}
-      
-      <style>{`
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
-        .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-      `}</style>
-    </div>
-  );
-}
-
-// --- 組件設計 ---
-
-function TabBtn({ active, onClick, icon, label, color }) {
-  const styles = {
-    emerald: active ? 'bg-emerald-500 text-white shadow-emerald-100' : 'text-slate-400 hover:text-emerald-500',
-    blue: active ? 'bg-blue-500 text-white shadow-blue-100' : 'text-slate-400 hover:text-blue-500',
-    amber: active ? 'bg-amber-500 text-white shadow-amber-100' : 'text-slate-400 hover:text-amber-500'
-  };
-  return (
-    <button onClick={onClick} className={`flex-1 md:flex-none p-3 md:p-4 rounded-2xl flex flex-col md:flex-row items-center gap-3 font-bold transition-all ${styles[color]} ${active ? 'shadow-xl scale-105' : 'hover:bg-slate-50'}`}>
-      <Icon name={icon} size={20} /> <span className="text-[10px] md:text-sm tracking-tight">{label}</span>
-    </button>
-  );
-}
-
-function DashboardView({ bookings, activities, transactions }) {
-  const income = transactions.filter(t=>t.type==='income').reduce((sum, t) => sum + Number(t.amount), 0);
-  const expense = transactions.filter(t=>t.type==='expense').reduce((sum, t) => sum + Number(t.amount), 0);
-  return (
-    <div className="space-y-12 animate-fade-in text-slate-800">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <StatCard title="月營收總額" value={`$${income.toLocaleString()}`} color="emerald" icon="trendingUp" />
-        <StatCard title="住宿預約數" value={`${bookings.length} 筆`} color="blue" icon="bed" />
-        <StatCard title="活動報名數" value={`${activities.length} 位`} color="amber" icon="star" />
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        <div className="bg-white p-10 rounded-[3.5rem] shadow-sm border border-slate-100 relative overflow-hidden">
-           <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-50 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-           <h3 className="text-2xl font-black mb-8 flex items-center gap-3 text-emerald-600 relative z-10"><Icon name="calendar" /> 最新預約動態</h3>
-           <div className="space-y-4 relative z-10">
-              {bookings.slice(0, 4).map(b => (
-                <div key={b.id} className="p-5 bg-slate-50/50 rounded-[2rem] hover:bg-white hover:shadow-md transition-all flex justify-between items-center border border-transparent hover:border-slate-100">
-                  <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{b.date}</p>
-                    <p className="text-lg font-black text-slate-800">{b.guestName}</p>
-                  </div>
-                  <span className="px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black">{b.roomType}</span>
-                </div>
-              ))}
-              {bookings.length === 0 && <div className="text-center py-16 text-slate-200 font-bold italic tracking-widest uppercase">目前尚無預約紀錄</div>}
-           </div>
-        </div>
-        <div className="bg-slate-900 p-10 rounded-[3.5rem] shadow-2xl text-white flex flex-col justify-between group">
-           <div><h3 className="text-2xl font-black mb-1 text-emerald-400 tracking-tight">農場經營概況</h3><p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">Operational Health</p></div>
-           <div className="mt-12">
-              <div className="flex justify-between items-end mb-6">
-                 <p className="text-slate-400 font-bold">當前結餘</p>
-                 <p className="text-5xl font-black tracking-tighter text-white">${(income - expense).toLocaleString()}</p>
-              </div>
-              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                 <div className="h-full bg-emerald-400 transition-all duration-1000" style={{width: income > 0 ? `${Math.min(100, ((income-expense)/income)*100)}%` : '50%'}}></div>
-              </div>
-           </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ title, value, color, icon }) {
-  const map = { emerald: 'text-emerald-500', blue: 'text-blue-500', amber: 'text-amber-500' };
-  return (
-    <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100 flex items-center justify-between group hover:shadow-xl hover:-translate-y-1 transition-all duration-500">
-      <div><p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-2">{title}</p><p className={`text-5xl font-black ${map[color]} tracking-tighter`}>{value}</p></div>
-      <div className={`p-5 bg-slate-50 ${map[color]} rounded-3xl shadow-inner group-hover:rotate-12 transition-transform`}><Icon name={icon} size={32} /></div>
-    </div>
-  );
-}
-
-function FormView({ type, data, isAdmin, setMessage, getColl, getDocRef }) {
-  const [f, setF] = useState({ guestName: '', date: '', item: type==='booking'?'雙人房':'餵食秀體驗', count: '1' });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const add = async (e) => {
-    e.preventDefault();
-    if(!f.guestName || !f.date) return setMessage({type:'error', text:'請完整填寫姓名與日期'});
-    setIsSubmitting(true);
-    try {
-      const collName = type === 'booking' ? "bookings" : "activityOrders";
-      await addDoc(getColl(collName), { 
-        guestName: f.guestName, date: f.date, 
-        [type==='booking'?'roomType':'activity']: f.item,
-        ...(type==='activity' && { playerCount: f.count }),
-        createdAt: serverTimestamp() 
-      });
-      setF({...f, guestName:''}); setMessage({type:'success', text:'預約成功！農場主人已收到您的請求'});
-    } catch (err) {
-      setMessage({type:'error', text:'預約失敗，請檢查權限設定'});
-    } finally { setIsSubmitting(false); }
-  };
-
-  return (
-    <div className="space-y-12 animate-fade-in text-slate-800">
-      <div className="bg-white p-10 rounded-[4rem] shadow-xl border border-slate-50 relative overflow-hidden">
-        <div className={`absolute top-0 left-0 w-full h-2 ${type==='booking'?'bg-blue-400':'bg-amber-400'}`}></div>
-        <h3 className={`text-3xl font-black mb-10 flex items-center gap-4 ${type==='booking'?'text-blue-500':'text-amber-500'}`}>
-          <Icon name={type==='booking'?'bed':'star'} size={36} /> {type==='booking'?'快速訂房系統':'活動體驗報名'}
-        </h3>
-        <form onSubmit={add} className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-6 items-end">
-          <Input label="預約人姓名" value={f.guestName} onChange={v=>setF({...f, guestName:v})} placeholder="大名" disabled={isSubmitting} />
-          <Input label="預定日期" type="date" value={f.date} onChange={v=>setF({...f, date:v})} disabled={isSubmitting} />
-          <Select label={type==='booking'?'選擇房型':'活動項目'} value={f.item} onChange={v=>setF({...f, item:v})} options={type==='booking'?['雙人房','四人家庭房','行政套房']:['餵食秀體驗','生態導覽','馬術表演','披薩DIY']} disabled={isSubmitting} />
-          {type==='activity' && <Input label="參加人數" type="number" value={f.count} onChange={v=>setF({...f, count:v})} disabled={isSubmitting} />}
-          <button type="submit" disabled={isSubmitting} className={`p-5 rounded-[1.5rem] font-black shadow-lg text-white active:scale-95 transition-all text-lg flex items-center justify-center gap-2 ${type==='booking'?'bg-blue-500 shadow-blue-100':'bg-amber-500 shadow-amber-100'}`}>
-            {isSubmitting ? <Icon name="loading" className="animate-spin" /> : '立即預約'}
-          </button>
+  if (!userRole) {
+    return (
+      <div>
+        <button onClick={()=>setUserRole('visitor')}>訪客</button>
+        <form onSubmit={handleLogin}>
+          <input type="password" onChange={e=>setPassword(e.target.value)} />
+          <button>登入</button>
         </form>
       </div>
-      <div className="bg-white rounded-[3.5rem] border border-slate-100 overflow-hidden shadow-sm mb-24">
-        <table className="w-full text-left font-bold text-slate-600">
-          <thead className="bg-slate-50/50 text-slate-300 text-[10px] font-black uppercase tracking-[0.2em] border-b border-slate-100">
-            <tr><th className="p-8">日期</th><th className="p-8">預約人</th><th className="p-8">項目細節</th>{isAdmin && <th className="p-8 text-center">操作</th>}</tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50 text-slate-700">
-            {data.map(d => (
-              <tr key={d.id} className="hover:bg-slate-50/30 transition-colors">
-                <td className="p-8 text-sm font-mono">{d.date}</td><td className="p-8 text-lg">{d.guestName}</td>
-                <td className="p-8"><span className={`px-5 py-2 rounded-full text-[10px] uppercase font-black tracking-widest ${type==='booking'?'bg-blue-50 text-blue-500':'bg-amber-50 text-amber-600'}`}>{d.roomType || d.activity}</span></td>
-                {isAdmin && <td className="p-8 text-center"><button onClick={()=>deleteDoc(getDocRef(type==='booking'?"bookings":"activityOrders", d.id))} className="text-slate-100 hover:text-rose-500 p-2 transition-all"><Icon name="trash" size={20} /></button></td>}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
+    );
+  }
 
-function Input({ label, type="text", value, onChange, placeholder, disabled }) {
   return (
-    <div className="flex flex-col gap-3">
-      <label className="text-[10px] font-black text-slate-400 ml-4 uppercase tracking-widest">{label}</label>
-      <input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} disabled={disabled} className="p-5 bg-slate-50 rounded-[1.5rem] border-none font-bold shadow-inner outline-none focus:ring-4 ring-emerald-50 text-slate-700 disabled:opacity-50" />
-    </div>
-  );
-}
+    <div>
+      <h1>預約系統</h1>
 
-function Select({ label, value, onChange, options, disabled }) {
-  return (
-    <div className="flex flex-col gap-3">
-      <label className="text-[10px] font-black text-slate-400 ml-4 uppercase tracking-widest">{label}</label>
-      <select value={value} onChange={e=>onChange(e.target.value)} disabled={disabled} className="p-5 bg-slate-50 rounded-[1.5rem] border-none font-bold shadow-inner outline-none focus:ring-4 ring-emerald-50 text-slate-700 appearance-none disabled:opacity-50">
-        {options.map(o => <option key={o} value={o}>{o}</option>)}
-      </select>
-    </div>
-  );
-}
-
-const WorkView = ({ records, setMessage, getColl, getDocRef }) => {
-  const [crop, setCrop] = useState('');
-  const add = async (a) => {
-    if(!crop) return setMessage({type:'error', text:'請輸入作物名稱'});
-    try {
-      await addDoc(getColl("workRecords"), { crop, activity: a, date: new Date().toISOString().split('T')[0], createdAt: serverTimestamp() });
-      setCrop(''); setMessage({type:'success', text:`${crop} ${a} 紀錄成功`});
-    } catch (err) { setMessage({type:'error', text:'紀錄失敗'}); }
-  };
-  return (
-    <div className="space-y-12 animate-fade-in text-slate-800">
-      <div className="bg-white p-12 rounded-[4rem] shadow-xl border border-emerald-50 relative border-b-8 border-emerald-500">
-        <div className="absolute top-8 right-8 text-emerald-50"><Icon name="sprout" size={100}/></div>
-        <h3 className="text-3xl font-black text-emerald-600 mb-10 flex items-center gap-4 relative z-10"><Icon name="sprout" size={32}/> 農事管家筆記</h3>
-        <input placeholder="今天要照顧哪種作物？" value={crop} onChange={e=>setCrop(e.target.value)} className="w-full p-6 bg-slate-50 rounded-[2.5rem] mb-10 font-black text-2xl outline-none shadow-inner border-none focus:ring-4 ring-emerald-50 relative z-10" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 relative z-10">
-          {['栽種','施肥','澆水','採收'].map(a => <button key={a} onClick={()=>add(a)} className="p-6 bg-emerald-600 text-white rounded-[2rem] font-black text-xl hover:bg-emerald-700 shadow-xl shadow-emerald-50 active:scale-95 transition-all"> {a} </button>)}
+      {bookings.map(b => (
+        <div key={b.id}>
+          {b.guestName} - {b.date}
+          <button onClick={() => handleDelete(b.id)}>刪除</button>
         </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-32">
-        {records.map(r => <div key={r.id} className="bg-white p-8 rounded-[3rem] border border-slate-50 flex justify-between items-center group hover:shadow-2xl transition-all">
-          <div><p className="font-black text-2xl text-slate-800 tracking-tight">{r.crop}</p><p className="text-[10px] text-emerald-500 font-bold uppercase mt-2 tracking-[0.3em]">{r.date} · {r.activity}</p></div>
-          <button onClick={()=>deleteDoc(getDocRef("workRecords", r.id))} className="text-slate-100 hover:text-rose-500 opacity-0 group-hover:opacity-100 p-2 transition-all active:scale-90"><Icon name="trash" size={24} /></button>
-        </div>)}
-      </div>
-    </div>
-  );
-};
+      ))}
 
-const FinanceView = ({ txs, setMessage, getColl, getDocRef }) => {
-  const [f, setF] = useState({ amount: '', type: 'income', note: '' });
-  const add = async (e) => {
-    e.preventDefault();
-    if(!f.amount) return;
-    try {
-      await addDoc(getColl("transactions"), { ...f, amount: Number(f.amount), date: new Date().toISOString().split('T')[0], createdAt: serverTimestamp() });
-      setF({...f, amount:'', note:''}); setMessage({type:'success', text:'收支帳目更新成功'});
-    } catch (err) { setMessage({type:'error', text:'登錄失敗'}); }
-  };
-  return (
-    <div className="space-y-12 animate-fade-in text-slate-800">
-      <div className="bg-white p-12 rounded-[4rem] shadow-xl border border-amber-50 relative border-b-8 border-amber-500">
-        <h3 className="text-3xl font-black text-amber-500 mb-10 flex items-center gap-4"><Icon name="wallet" size={32} /> 農場收支登錄</h3>
-        <form onSubmit={add} className="grid grid-cols-1 md:grid-cols-4 gap-8 items-end">
-          <Select label="收支項目" value={f.type} onChange={v=>setF({...f, type:v})} options={['income','expense']} />
-          <Input label="金額 (NTD)" type="number" value={f.amount} onChange={v=>setF({...f, amount:v})} placeholder="0" />
-          <Input label="細節摘要" value={f.note} onChange={v=>setF({...f, note:v})} placeholder="來源說明" />
-          <button type="submit" className="bg-slate-900 text-white p-6 rounded-[2rem] font-black text-xl active:scale-95 transition-all shadow-lg hover:bg-black">確認入帳</button>
-        </form>
-      </div>
-      <div className="bg-white rounded-[4rem] border border-slate-50 overflow-hidden shadow-sm mb-32 divide-y divide-slate-50">
-        {txs.map(t => <div key={t.id} className="p-8 flex justify-between items-center hover:bg-slate-50 transition-all">
-          <div className="flex gap-6 items-center">
-            <div className={`p-4 rounded-3xl ${t.type==='income'?'bg-emerald-50 text-emerald-500':'bg-rose-50 text-rose-600'} shadow-inner`}><Icon name={t.type==='income'?'trendingUp':'dashboard'} size={24} /></div>
-            <div><p className="font-black text-2xl text-slate-800 tracking-tight">{t.note || (t.type==='income'?'銷售收入':'採購支出')}</p><p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest mt-1">{t.date}</p></div>
-          </div>
-          <div className="flex items-center gap-8">
-            <p className={`text-4xl font-black ${t.type==='income'?'text-emerald-500':'text-rose-500'} tracking-tighter`}>{t.type==='income'?'+':'-'}${Number(t.amount).toLocaleString()}</p>
-            <button onClick={()=>deleteDoc(getDocRef("transactions", t.id))} className="text-slate-100 hover:text-rose-500 p-2 active:scale-90 transition-all"><Icon name="trash" size={20}/></button>
-          </div>
-        </div>)}
-      </div>
+      {message && <p>{message.text}</p>}
     </div>
   );
 }
