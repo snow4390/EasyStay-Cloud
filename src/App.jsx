@@ -222,7 +222,7 @@ export default function App() {
             <div className="p-4 bg-emerald-500 text-white inline-block rounded-2xl mb-8 self-start shadow-lg shadow-emerald-200">
               <Icon name="sprout" size={40} />
             </div>
-            <h1 className="text-4xl md:text-5xl font-black mb-4 leading-tight text-slate-800">綠色大地<br/><span className="text-emerald-500">休閒農場</span></h1>
+            <h1 className="text-4xl md:text-5xl font-black mb-4 leading-tight text-slate-800">拾光<br/><span className="text-emerald-500">休閒農場</span></h1>
             <p className="text-slate-500 font-medium">預約住宿、體驗農作，享受純粹的自然生活。</p>
           </div>
           <div className="w-full md:w-1/2 p-12 flex flex-col justify-center space-y-8 bg-white z-10">
